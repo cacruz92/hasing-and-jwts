@@ -30,7 +30,6 @@ class User {
       next(e);
     }
 
-
    }
 
   /** Authenticate: is this username/password valid? Returns boolean. */
@@ -55,12 +54,31 @@ class User {
 
   /** Update last_login_at for user */
 
-  static async updateLoginTimestamp(username) { }
+  static async updateLoginTimestamp(username) {
+    const results = await db.query(
+      `UPDATE users
+      SET current_timestamp = current_timestamp
+      WHERE username = $1
+      RETURNING username`,
+      [username]
+    )
+
+    if(!results.rows[0]){
+      throw new ExpressError(`No such user: ${username}`, 404);
+    }
+  }
 
   /** All: basic info on all users:
    * [{username, first_name, last_name, phone}, ...] */
 
-  static async all() { }
+  static async all() {
+    const results = await db.query(
+      `SELECT username, first_name, last_name, phone
+      FROM users
+      ORDER BY username`
+    );
+    return results.rows;
+  }
 
   /** Get: get user by username
    *
@@ -71,7 +89,18 @@ class User {
    *          join_at,
    *          last_login_at } */
 
-  static async get(username) { }
+  static async get(username) {
+    const results = await db.query(
+      `SELECT username, first_name, last_name, phone, join_at, last_login_at
+      FROM users
+      WHERE username = $1`,
+      [username]
+    );
+    if(!results.rows[0]){
+      throw new ExpressError(`No such user: ${username}`, 404);
+    }
+    return results.rows[0];
+  }
 
   /** Return messages from this user.
    *
@@ -81,7 +110,34 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesFrom(username) { }
+  static async messagesFrom(username) {
+    const results = await db.query(
+      `SELECT m.id,
+              m.to_username,
+              u.first_name,
+              u.last_name,
+              u.phone,
+              m.body,
+              m.sent_at,
+              m.read_at
+        FROM messages AS m
+          JOIN users AS u on m.to_username = u.username
+        WHERE from_username = $1`,
+      [username]
+    );
+    return results.rows.map(m => ({
+      id: m.id,
+      to_user: {
+        username: m.to_username,
+        first_name: m.first_name,
+        last_name: m.last_name,
+        phone: m.phone
+      },
+      body: m.body,
+      sent_at: m.sent_at,
+      read_at: m.read_at
+    }));
+  }
 
   /** Return messages to this user.
    *
@@ -91,7 +147,34 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesTo(username) { }
+  static async messagesTo(username) {
+    const results = await db.query(
+      `SELECT m.id,
+              m.to_username,
+              u.first_name,
+              u.last_name,
+              u.phone,
+              m.body,
+              m.sent_at,
+              m.read_at
+        FROM messages AS m
+          JOIN users AS u on m.to_username = u.username
+        WHERE to_username = $1`,
+      [username]
+    );
+    return results.rows.map(m => ({
+      id: m.id,
+      from_user: {
+        username: m.to_username,
+        first_name: m.first_name,
+        last_name: m.last_name,
+        phone: m.phone
+      },
+      body: m.body,
+      sent_at: m.sent_at,
+      read_at: m.read_at
+    }));
+  }
 }
 
 
