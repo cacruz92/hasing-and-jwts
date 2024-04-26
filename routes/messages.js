@@ -1,3 +1,12 @@
+const jwt = require("jsonwebtoken");
+const Router = require("express").Router
+const router = new Router();
+
+const User = require("../models/user")
+const Message = require("../models/message")
+const {SECRET_KEY} = require("../config")
+const ExpressError = require("../expressError");
+
 /** GET /:id - get detail of message.
  *
  * => {message: {id,
@@ -10,7 +19,13 @@
  * Make sure that the currently-logged-in users is either the to or from user.
  *
  **/
-
+router.get("/:id", async(req, res, next) => {
+    try{
+        id = req.params.id
+    }catch(e){
+        next(e)
+    }
+})
 
 /** POST / - post message.
  *
@@ -28,3 +43,4 @@
  *
  **/
 
+module.exports = router;
